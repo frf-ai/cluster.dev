@@ -20,7 +20,7 @@ type tfVars struct {
 	VpcID                      string      `json:"vpc_id"`
 	ClusterVersion             string      `json:"cluster_version" yaml:"version"`
 	WorkerAdditionalSgIds      []string    `json:"worker_additional_security_group_ids,omitempty"`
-	WorkerSubnetType           string      `json:"workers_subnets_type"`
+	WorkerSubnetType           string      `json:"workers_subnets_type,omitempty"`
 	WorkerGroupsLaunchTemplate interface{} `json:"worker_groups_launch_template,omitempty"`
 }
 
@@ -75,6 +75,9 @@ func (f *Factory) New(providerConf aws.Config, clusterState *cluster.State) (pro
 	eks.config.Region = providerConf.Region
 	eks.config.VpcID = providerConf.Vpc
 	eks.config.WorkerGroupsLaunchTemplate = providerConf.Provisioner["node_group"]
+	if providerConf.Vpc == "default" {
+		eks.config.WorkerSubnetType = "public"
+	}
 
 	var err error
 	eks.terraform, err = executor.NewTerraformRunner(eks.moduleDir)
