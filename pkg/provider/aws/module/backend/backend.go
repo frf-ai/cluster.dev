@@ -94,23 +94,19 @@ func (s *Backend) Deploy() error {
 
 // Destroy - remove s3 bucket.
 func (s *Backend) Destroy() error {
-	// sss
 	log.Debug("Delete s3 bucket.")
 	// Set variables.
 	command := fmt.Sprintf("aws s3api delete-objects --bucket \"%[1]s\" --delete \"$(aws s3api list-object-versions --bucket %[1]s --output=json --query='{Objects: Versions[].{Key:Key,VersionId:VersionId}}')\"", s.config.Bucket)
+	// Not need check error. Error it's ok in this case.
+	s.bash.Run(command)
+	command = fmt.Sprintf("aws s3api delete-objects --bucket \"%[1]s\" --delete \"$(aws s3api list-object-versions --bucket %[1]s --output=json --query='{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}')\"", s.config.Bucket)
+	// Not need check error. Error it's ok in this case.
+	s.bash.Run(command)
+
+	command = fmt.Sprintf("aws s3 rb \"s3://%s\" --force", s.config.Bucket)
 	err := s.bash.Run(command)
 	if err != nil {
-		log.Warnf("Can't mark bucket objects: %s", err.Error())
-	}
-	command = fmt.Sprintf("aws s3api delete-objects --bucket \"%[1]s\" --delete \"$(aws s3api list-object-versions --bucket %[1]s --output=json --query='{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}')\"", s.config.Bucket)
-	err = s.bash.Run(command)
-	if err != nil {
-		log.Warnf("Can't remove bucket objects: %s", err.Error())
-	}
-	command = fmt.Sprintf("aws s3 rb \"s3://%s\" --force", s.config.Bucket)
-	err = s.bash.Run(command)
-	if err != nil {
-		log.Warnf("Can't remove bucket: %s", err.Error())
+		return fmt.Errorf("can't remove bucket: %s", err.Error())
 	}
 	command = fmt.Sprintf("aws --region \"%s\" dynamodb delete-table --table-name \"%s-state\"", s.config.Region, s.config.Bucket)
 	err = s.bash.Run(command)

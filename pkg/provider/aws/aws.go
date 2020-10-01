@@ -123,7 +123,6 @@ func (p *Provider) Destroy() error {
 		{Category: "modules", Name: "route53"},
 		{Category: "modules", Name: "backend"},
 	}...)
-	errCount := 0
 	for _, opDesc := range awsDestroyStrategy {
 		opFactory, exists := providerActivitiesFactories[opDesc.Category][opDesc.Name]
 		if !exists {
@@ -137,12 +136,8 @@ func (p *Provider) Destroy() error {
 		defer operation.Clear()
 
 		if err = operation.Destroy(); err != nil {
-			errCount++
-			log.Errorf("Destroying '%s.%s' error (ignoring): %s", opDesc.Category, opDesc.Name, err.Error())
+			return err
 		}
-	}
-	if errCount > 0 {
-		return fmt.Errorf("Errors occurred during the destruction. Count: %v", errCount)
 	}
 	return nil
 }
